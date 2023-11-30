@@ -36,4 +36,17 @@ describe("Job class tests", () => {
     job.execute();
     expect(mockCallback).toHaveBeenCalledWith(new Error("Execution error"));
   });
+
+  test("Job executes asynchronous function", async () => {
+    const job = new Job("job 1", "10m", () => {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            resolve("hello async world");
+          }, 1000);
+        });
+      });
+
+    const result = await job.execute();
+    expect(result).toBe("hello async world");
+  });
 });
