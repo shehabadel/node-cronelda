@@ -1,9 +1,7 @@
 const Job = require("./Job");
 const job = new Job("job 1", "10m", () => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve("hello async world");
-    }, 1000);
-  });
+  console.log("hello");
+  return "x";
 });
-const result = job.execute().then((result) => result);
+const result = job.execute();
+console.log(result);

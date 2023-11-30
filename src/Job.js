@@ -25,14 +25,8 @@ class Job extends EventEmitter {
     }
     if (exec instanceof Promise) {
       return exec
-        .then((result) => {
-          this.emit("task finished");
-          return result;
-        })
-        .catch((error) => {
-          this.emit("task failed", error);
-          return error;
-        });
+        .then(() => this.emit("task finished"))
+        .catch((error) => this.emit("task failed", error));
     } else {
       this.emit("task finished");
       return exec;
