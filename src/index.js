@@ -13,8 +13,8 @@ const jobsBulk = [
     execution: () => {
       return new Promise(() => {
         setTimeout(() => {
-          console.log("hello world async after 3 seconds");
-        }, 3000);
+          console.log("hello world async after 6 seconds");
+        }, 6000);
       });
     },
   },

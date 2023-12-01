@@ -60,11 +60,9 @@ class Scheduler extends EventEmitter {
   async startScheduler() {
     const jobExecutions = Array.from(this._jobs.values()).map((job) => {
       const execution = job.execute();
-      return execution instanceof Promise
-        ? execution
-        : Promise.resolve(execution);
+      return execution;
     });
-    await Promise.all(jobExecutions);
+    await Promise.any(jobExecutions);
   }
 }
 module.exports = Scheduler;
