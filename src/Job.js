@@ -38,5 +38,9 @@ class Job extends EventEmitter {
       return exec;
     }
   }
+
+  getName(){
+    return this._name;
+  }
 }
 module.exports = Job;
