@@ -8,15 +8,14 @@ class Scheduler extends EventEmitter {
     this._isRunning = false;
     this.on("scheduler-start", () => {
       console.log("Started scheduler");
-      for (let [key, val] of this._jobs.entries()) {
-        console.log(key, val);
-      }
+      this.startScheduler();
     });
     this.on("task-execute", (jobName) => {
       console.log(jobName);
     });
   }
   addJob(jobObj) {
+    console.log(jobObj);
     let job;
     try {
       job = new Job(
@@ -57,6 +56,15 @@ class Scheduler extends EventEmitter {
   }
   getJobsLength() {
     return this._jobs.size;
+  }
+  async startScheduler() {
+    const jobExecutions = Array.from(this._jobs.values()).map((job) => {
+      const execution = job.execute();
+      return execution instanceof Promise
+        ? execution
+        : Promise.resolve(execution);
+    });
+    await Promise.all(jobExecutions);
   }
 }
 module.exports = Scheduler;

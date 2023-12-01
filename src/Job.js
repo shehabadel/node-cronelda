@@ -4,7 +4,7 @@ class Job extends EventEmitter {
   constructor(name, time, execution, options = {}) {
     super();
     if (typeof execution !== "function") {
-      throw "execution parameter must be a function!";
+      throw new Error("execution parameter must be a function!");
     }
     this._name = name;
     this._time = time;
@@ -39,7 +39,7 @@ class Job extends EventEmitter {
     }
   }
 
-  getName(){
+  getName() {
     return this._name;
   }
 }
