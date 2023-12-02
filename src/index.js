@@ -1,8 +1,10 @@
 const Scheduler = require("./Scheduler");
+const parseTimeToInt = require("./Parser").parseTimeToInt;
+
 const jobsBulk = [
   {
     name: "job 1",
-    time: "10m",
+    time: "1s",
     execution: () => {
       console.log("x");
     },
