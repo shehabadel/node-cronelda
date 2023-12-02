@@ -12,6 +12,21 @@ class Job extends EventEmitter {
     this._once = options.once !== undefined ? options.once : false;
     this._interval = parseTimeToInt(time);
     this._intervalId = null;
+    this._timeoutId = null;
+
+    this.on("start-execution", () => {
+      console.log(
+        `Job {${this._name}} has started executing with interval: ${this._interval}`
+      );
+    });
+    this.on("job-failed", (error) => {
+      console.log(`Job {${this._name}} has failed with the following error`);
+      console.error(error);
+    });
+    this.on("stop-job", () => {
+      clearInterval(this._intervalId);
+      clearTimeout(this._timeoutId);
+    });
   }
 
   /**
@@ -19,25 +34,22 @@ class Job extends EventEmitter {
    * and emits an event when job finishes or fails.
    */
   execute() {
+    this.emit("start-execution");
     let exec;
     try {
-      exec = this._execution();
+      if (!this.getOnce()) {
+        let intervalId = setInterval(() => {
+          exec = this._execution();
+        }, this._interval);
+        this.setIntervalId(intervalId);
+      } else {
+        let timeoutId = setTimeout(() => {
+          exec = this._execution();
+        }, 0);
+        this.setTimeoutId(timeoutId);
+      }
     } catch (error) {
       this.emit("job failed", error);
-    }
-    if (exec instanceof Promise) {
-      return exec
-        .then((result) => {
-          this.emit("job finished");
-          return result;
-        })
-        .catch((error) => {
-          this.emit("job failed", error);
-          throw error;
-        });
-    } else {
-      this.emit("job finished");
-      return exec;
     }
   }
 
@@ -54,12 +66,20 @@ class Job extends EventEmitter {
     return this._intervalId;
   }
 
+  getTimeoudId() {
+    return this._timeoutId;
+  }
+
+  setTimeoudId(timeoutId) {
+    this._timeoutId = timeoutId;
+  }
+
   setIntervalId(intervalId) {
     this._intervalId = intervalId;
   }
 
-  clearInterval() {
-    clearInterval(this._intervalId);
+  stopJob() {
+    this.emit("stop-job");
   }
 }
 module.exports = Job;
