@@ -1,4 +1,6 @@
 const Scheduler = require("./Scheduler");
+const parseTimeToInt = require("./Parser").parseTimeToInt;
+
 const jobsBulk = [
   {
     name: "job 1",
@@ -65,6 +67,7 @@ const jobsBulk = [
 ];
 function main() {
   try {
+    console.log(parseTimeToInt("1M"));
     const scheduler = new Scheduler();
     jobsBulk.forEach((job) => {
       scheduler.addJob(job);

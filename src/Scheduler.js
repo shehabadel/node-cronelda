@@ -1,6 +1,5 @@
 const EventEmitter = require("events");
 const Job = require("./Job");
-
 class Scheduler extends EventEmitter {
   constructor() {
     super();
