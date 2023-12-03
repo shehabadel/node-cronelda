@@ -1,53 +1,74 @@
 const EventEmitter = require("events");
-const Job = require("./Job");
+const { fork } = require("child_process");
+const DAEMON_PATH = "./daemon.js";
 class Scheduler extends EventEmitter {
   constructor() {
     super();
-    this._jobs = new Map();
+    this._jobs = [];
+    this._daemonProcess = null;
     this._isRunning = false;
-    this.on("scheduler-start", () => {
-      console.log("Started scheduler");
-      this.startScheduler();
+    this.on("scheduler-stop", () => {
+      console.log("SCHEDULER: ---Stopping scheduler---");
+      this.stopScheduler();
     });
-    this.on("task-execute", (jobName) => {
-      console.log(jobName);
+    this.on("scheduler-start", () => {
+      console.log("SCHEDULER: ---Starting scheduler---");
+      this.startScheduler();
     });
   }
   addJob(jobObj) {
-    console.log(jobObj);
-    let job;
     try {
-      job = new Job(
-        jobObj.name,
-        jobObj.time,
-        jobObj.execution,
-        jobObj?.options
-      );
+      if (this.jobExists(jobObj.name)) {
+        throw new Error(`${jobObj.name} already exists!`);
+      }
+      this._jobs.push(jobObj);
+      if (this.isRunning()) {
+        this._daemonProcess.send({
+          type: "execute-new-job",
+          data: {
+            ...jobObj,
+            execution: jobObj.execution.toString(),
+          },
+        });
+      }
     } catch (error) {
+      console.error(
+        `SCHEDULER: Couldn't add ${jobObj.name} as it is already exists`
+      );
       this.emit("task-add-failed");
       throw error;
     }
+  }
+  startScheduler() {
+    if (!this._isRunning) {
+      this._daemonProcess = fork(DAEMON_PATH);
+      const jobsToSend = this._jobs.map((job) => {
+        job.execution = job.execution.toString();
+        return job;
+      });
+      this._daemonProcess.send({
+        type: "get-jobs-data",
+        data: jobsToSend,
+      });
 
-    try {
-      if (this._jobs.has(job.getName())) {
-        throw new Error(`${job.getName()} already exists!`);
-      }
-      this._jobs.set(job.getName(), job);
-      if (this._isRunning) {
-        this.emit("task-execute", job.getName());
-      }
-    } catch (error) {
-      console.error(`Couldn't add ${job.getName()} as it is already exists`);
-      this.emit("task-add-failed");
-      throw error;
+      this._daemonProcess.send({
+        type: "run-jobs",
+      });
+
+      this._daemonProcess.on("message", (message) => {
+        if (message === "daemon-isRunning") {
+          this._isRunning = true;
+        }
+      });
+      this.setupErrorDelegators();
+    } else {
+      console.log("SCHEDULER: the scheduler is already running!");
     }
   }
   start() {
-    this._isRunning = true;
     this.emit("scheduler-start");
   }
   stop() {
-    this._isRunning = false;
     this.emit("scheduler-stop");
   }
   isRunning() {
@@ -56,12 +77,33 @@ class Scheduler extends EventEmitter {
   getJobsLength() {
     return this._jobs.size;
   }
-  async startScheduler() {
-    const jobExecutions = Array.from(this._jobs.values()).map((job) => {
-      const execution = job.execute();
-      return execution;
+
+  stopScheduler() {
+    if (this.isRunning()) {
+      this._daemonProcess.send({
+        type: "stop-jobs",
+      });
+      this._daemonProcess.on("message", (message) => {
+        if (message === "daemon-stopped") this._daemonProcess.kill();
+        this._isRunning = false;
+        console.log("SCHEDULER: ---Stopped scheduler---");
+      });
+    }
+  }
+  getJobs() {
+    return this._jobs;
+  }
+
+  jobExists(jobName) {
+    return this._jobs.some((job) => job.name === jobName);
+  }
+  setupErrorDelegators() {
+    this._daemonProcess.on("get-jobs-error", (message) => {
+      throw message;
     });
-    await Promise.any(jobExecutions);
+    this._daemonProcess.on("job-failed", (message) => {
+      throw message;
+    });
   }
 }
 module.exports = Scheduler;

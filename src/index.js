@@ -1,5 +1,4 @@
 const Scheduler = require("./Scheduler");
-const parseTimeToInt = require("./Parser").parseTimeToInt;
 
 const jobsBulk = [
   {
@@ -11,18 +10,18 @@ const jobsBulk = [
   },
   {
     name: "job 2",
-    time: "10m",
+    time: "2s",
     execution: () => {
       return new Promise(() => {
         setTimeout(() => {
-          console.log("hello world async after 6 seconds");
-        }, 6000);
+          console.log("hello world async after 20 seconds");
+        }, 20000);
       });
     },
   },
   {
     name: "job 3",
-    time: "10m",
+    time: "3s",
     execution: () => {
       return new Promise(() => {
         setTimeout(() => {
@@ -33,7 +32,7 @@ const jobsBulk = [
   },
   {
     name: "job 4",
-    time: "10m",
+    time: "2s",
     execution: () => {
       return new Promise(() => {
         setTimeout(() => {
@@ -44,7 +43,7 @@ const jobsBulk = [
   },
   {
     name: "job 5",
-    time: "10m",
+    time: "1s",
     execution: () => {
       return new Promise(() => {
         setTimeout(() => {
@@ -72,6 +71,17 @@ function main() {
       scheduler.addJob(job);
     });
     scheduler.start();
+
+    setTimeout(() => {
+      scheduler.stop();
+    }, 6000);
+    setTimeout(() => {
+      console.log("will start again");
+      scheduler.start();
+    }, 9000);
+    setTimeout(() => {
+      scheduler.stop();
+    }, 12000);
   } catch (error) {
     console.error(error);
   }
