@@ -36,9 +36,6 @@ class Scheduler extends EventEmitter {
         });
       }
     } catch (error) {
-      // console.error(
-      //   `SCHEDULER: Couldn't add ${jobObj.name} as it is already exists`
-      // );
       this.emit("task-add-failed", error);
     }
   }
