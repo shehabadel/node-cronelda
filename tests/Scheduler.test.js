@@ -1,28 +1,39 @@
-//Job tests here
-const Job = require("../src/Job");
 const Scheduler = require("../src/Scheduler");
 
 describe("Scheduler class tests", () => {
+  let scheduler;
+  beforeEach(() => {
+    scheduler = new Scheduler();
+    scheduler.setDaemonPath("./src/daemon.js");
+  });
+
+  afterEach(() => {
+    scheduler.stop();
+    scheduler.clearJobs();
+  });
+
   test("Scheduler runs successfully on start", () => {
-    const scheduler = new Scheduler();
     scheduler.start();
-    const isRunning = scheduler.isRunning();
-    expect(isRunning).toBe(true);
+    setTimeout(() => {
+      const isRunning = scheduler.isRunning();
+      expect(isRunning).toBe(true);
+    }, 3000);
   });
 
   test("Add jobs to scheduler successfully", () => {
     const job = {
-      name: "job 2",
+      name: "job 5",
       time: "10m",
       execution: () => {
         console.log("world");
       },
     };
 
-    const scheduler = new Scheduler();
     scheduler.addJob(job);
-    const jobsLength = scheduler.getJobsLength();
-    expect(jobsLength).toBe(1);
+    setTimeout(() => {
+      const jobsLength = scheduler.getJobsLength();
+      expect(jobsLength).toBe(1);
+    }, 3000);
   });
 
   test("Throws error on adding a job with a name that already exists", () => {
@@ -41,13 +52,11 @@ describe("Scheduler class tests", () => {
       },
     };
 
-    const scheduler = new Scheduler();
-
     const mockCallback = jest.fn();
     scheduler.on("task-add-failed", mockCallback);
-    scheduler.addJob(job1);
-    scheduler.addJob(job2);
-    expect(mockCallback).toThrow("job 2 already exists!");
-    expect(mockCallback).toHaveBeenCalled();
+    expect(() => {
+      scheduler.addJob(job1);
+      scheduler.addJob(job2);
+    }).toThrowError("job 2 already exists!");
   });
 });

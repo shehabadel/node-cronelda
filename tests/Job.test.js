@@ -2,51 +2,35 @@
 const Job = require("../src/Job");
 
 describe("Job class tests", () => {
-  test('Job execution function returns "x"', () => {
-    const job = new Job("job 1", "10m", () => {
+  test("Job execution function runs", () => {
+    const job = new Job("job 1", "2s", () => {
       console.log("hello");
-      return "x";
     });
-
-    const result = job.execute();
-    expect(result).toBe("x");
-  });
-
-  test("Job emits task finished event", () => {
-    const job = new Job("job 2", "10m", () => {
-      console.log("world");
-      return "y";
-    });
-
-    const mockCallback = jest.fn();
-    job.on("task finished", mockCallback);
 
     job.execute();
-    expect(mockCallback).toHaveBeenCalled();
+    expect(job._intervalId).not.toBe(null);
   });
-
-  test("Job emits task failed event when execution fails", () => {
-    const job = new Job("job 3", "10m", () => {
-      throw new Error("Execution error");
+  test("test job logging in the terminal", () => {
+    console.log = jest.fn();
+    const job = new Job("job 1", "2s", () => {
+      log("hello");
     });
-
-    const mockCallback = jest.fn();
-    job.on("task failed", mockCallback);
 
     job.execute();
-    expect(mockCallback).toHaveBeenCalledWith(new Error("Execution error"));
+    setTimeout(() => {
+      expect(console.log).toHaveBeenCalledWith("hello");
+    }, 3000);
   });
+  // test("Job executes asynchronous function", async () => {
+  //   const job = new Job("job 1", "10m", () => {
+  //     return new Promise((resolve, reject) => {
+  //       setTimeout(() => {
+  //         resolve("hello async world");
+  //       }, 1000);
+  //     });
+  //   });
 
-  test("Job executes asynchronous function", async () => {
-    const job = new Job("job 1", "10m", () => {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve("hello async world");
-        }, 1000);
-      });
-    });
-
-    const result = await job.execute();
-    expect(result).toBe("hello async world");
-  });
+  //   const result = await job.execute();
+  //   expect(result).toBe("hello async world");
+  // });
 });

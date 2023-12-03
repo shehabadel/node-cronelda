@@ -6,6 +6,7 @@ class Scheduler extends EventEmitter {
     super();
     this._jobs = [];
     this._daemonProcess = null;
+    this._daemonPath = DAEMON_PATH;
     this._isRunning = false;
     this.on("scheduler-stop", () => {
       console.log("SCHEDULER: ---Stopping scheduler---");
@@ -14,6 +15,9 @@ class Scheduler extends EventEmitter {
     this.on("scheduler-start", () => {
       console.log("SCHEDULER: ---Starting scheduler---");
       this.startScheduler();
+    });
+    this.on("task-add-failed", (error) => {
+      throw error;
     });
   }
   addJob(jobObj) {
@@ -32,16 +36,15 @@ class Scheduler extends EventEmitter {
         });
       }
     } catch (error) {
-      console.error(
-        `SCHEDULER: Couldn't add ${jobObj.name} as it is already exists`
-      );
-      this.emit("task-add-failed");
-      throw error;
+      // console.error(
+      //   `SCHEDULER: Couldn't add ${jobObj.name} as it is already exists`
+      // );
+      this.emit("task-add-failed", error);
     }
   }
   startScheduler() {
     if (!this._isRunning) {
-      this._daemonProcess = fork(DAEMON_PATH);
+      this._daemonProcess = fork(this._daemonPath);
       const jobsToSend = this._jobs.map((job) => {
         job.execution = job.execution.toString();
         return job;
@@ -104,6 +107,12 @@ class Scheduler extends EventEmitter {
     this._daemonProcess.on("job-failed", (message) => {
       throw message;
     });
+  }
+  clearJobs() {
+    this._jobs = [];
+  }
+  setDaemonPath(path) {
+    this._daemonPath = path;
   }
 }
 module.exports = Scheduler;
