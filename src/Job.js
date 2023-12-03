@@ -1,5 +1,6 @@
 const EventEmitter = require("events");
 const parseTimeToInt = require("./Parser").parseTimeToInt;
+const MAX_TIME_INTERVAL = 2147483647;
 class Job extends EventEmitter {
   constructor(name, time, execution, options = {}) {
     super();
@@ -10,7 +11,7 @@ class Job extends EventEmitter {
     this._time = time;
     this._execution = execution;
     this._once = options.once !== undefined ? options.once : false;
-    this._interval = parseTimeToInt(time);
+    this._interval = Math.min(parseTimeToInt(time), MAX_TIME_INTERVAL);
     this._intervalId = null;
 
     this.on("start-execution", () => {
