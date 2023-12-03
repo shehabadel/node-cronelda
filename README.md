@@ -15,3 +15,12 @@ Implement an in-process cron scheduler that accepts a job and executes it period
    `2147483647`ms, approximately 25 days. If you added longer `interval` than the max, it will be automatically set to the maximum interval.
 2. When the `Scheduler` sends the jobs' data to the `daemon`, the `execution` function of each job is stringfied. Thus, it loses its `this`
    context. So, the `execution` function of the job must be standalone-function for now.
+
+
+## Trade-offs
+1. I decided to delegate running jobs to another module called “daemon” which runs in a child process whenever the API’s start() method is called.
+
+Why did I go with this approach?
+
+- I faced a problem with clearing the timeouts of the tasks whenever I call scheduler.stop(), since it keeps waiting for the last task to its finish execution, then terminates.
+Unlike using a separate child process which will terminate the execution directly. In addition, it will not block the main process execution.
