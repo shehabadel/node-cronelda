@@ -18,7 +18,7 @@ Implement an in-process cron scheduler that accepts a job and executes it period
 
 
 ## Trade-offs
-1. I decided to delegate running jobs to another module called “daemon” which runs in a child process whenever the API’s start() method is called.
+1. I decided to delegate running jobs to another module called “daemon” which runs in a child process whenever the Scheduler's start() method is called.
 
 Why did I go with this approach?
 
