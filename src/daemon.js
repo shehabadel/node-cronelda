@@ -20,15 +20,15 @@ process.on("message", (message) => {
       break;
     case "run-jobs":
       if (_jobs.size > 0) {
-        console.log("-----Starting Daemon-----");
+        console.log("DAEMON: -----Starting Daemon-----");
         startDaemon();
         process.send("daemon-isRunning");
       }
       break;
     case "stop-jobs":
-      console.log("-----Stopping Daemon-----");
+      console.log("DAEMON: -----Stopping Daemon-----");
       stopDaemon();
-      console.log("-----Stopped Daemon-----");
+      console.log("DAEMON: -----Stopped Daemon-----");
       process.send("daemon-stopped");
       break;
     case "execute-new-job":

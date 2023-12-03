@@ -71,6 +71,17 @@ function main() {
       scheduler.addJob(job);
     });
     scheduler.start();
+
+    setTimeout(() => {
+      scheduler.stop();
+    }, 6000);
+    setTimeout(() => {
+      console.log("will start again");
+      scheduler.start();
+    }, 9000);
+    setTimeout(() => {
+      scheduler.stop();
+    }, 12000);
   } catch (error) {
     console.error(error);
   }

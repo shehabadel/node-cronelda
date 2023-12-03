@@ -8,11 +8,11 @@ class Scheduler extends EventEmitter {
     this._daemonProcess = null;
     this._isRunning = false;
     this.on("scheduler-stop", () => {
-      console.log("---Stopping scheduler---");
+      console.log("SCHEDULER: ---Stopping scheduler---");
       this.stopScheduler();
     });
     this.on("scheduler-start", () => {
-      console.log("---Starting scheduler---");
+      console.log("SCHEDULER: ---Starting scheduler---");
       this.startScheduler();
     });
   }
@@ -32,32 +32,38 @@ class Scheduler extends EventEmitter {
         });
       }
     } catch (error) {
-      console.error(`Couldn't add ${jobObj.name} as it is already exists`);
+      console.error(
+        `SCHEDULER: Couldn't add ${jobObj.name} as it is already exists`
+      );
       this.emit("task-add-failed");
       throw error;
     }
   }
   startScheduler() {
-    this._daemonProcess = fork(DAEMON_PATH);
-    const jobsToSend = this._jobs.map((job) => {
-      job.execution = job.execution.toString();
-      return job;
-    });
-    this._daemonProcess.send({
-      type: "get-jobs-data",
-      data: jobsToSend,
-    });
+    if (!this._isRunning) {
+      this._daemonProcess = fork(DAEMON_PATH);
+      const jobsToSend = this._jobs.map((job) => {
+        job.execution = job.execution.toString();
+        return job;
+      });
+      this._daemonProcess.send({
+        type: "get-jobs-data",
+        data: jobsToSend,
+      });
 
-    this._daemonProcess.send({
-      type: "run-jobs",
-    });
+      this._daemonProcess.send({
+        type: "run-jobs",
+      });
 
-    this._daemonProcess.on("message", (message) => {
-      if (message === "daemon-isRunning") {
-        this._isRunning = true;
-      }
-    });
-    this.setupErrorDelegators();
+      this._daemonProcess.on("message", (message) => {
+        if (message === "daemon-isRunning") {
+          this._isRunning = true;
+        }
+      });
+      this.setupErrorDelegators();
+    } else {
+      console.log("SCHEDULER: the scheduler is already running!");
+    }
   }
   start() {
     this.emit("scheduler-start");
@@ -80,7 +86,7 @@ class Scheduler extends EventEmitter {
       this._daemonProcess.on("message", (message) => {
         if (message === "daemon-stopped") this._daemonProcess.kill();
         this._isRunning = false;
-        console.log("---Stopped scheduler---");
+        console.log("SCHEDULER: ---Stopped scheduler---");
       });
     }
   }
