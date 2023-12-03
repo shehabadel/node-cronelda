@@ -64,13 +64,14 @@ class Scheduler extends EventEmitter {
   getJobsLength() {
     return this._jobs.size;
   }
-  async startScheduler() {
+  startScheduler() {
     Array.from(this._jobs.values()).forEach((job) => {
       job.execute();
     });
   }
   stopScheduler() {
     Array.from(this._jobs.values()).forEach((job) => {
+      console.log(job.getIntervalId());
       job.stopJob();
     });
   }

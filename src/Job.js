@@ -12,7 +12,6 @@ class Job extends EventEmitter {
     this._once = options.once !== undefined ? options.once : false;
     this._interval = parseTimeToInt(time);
     this._intervalId = null;
-    this._timeoutId = null;
 
     this.on("start-execution", () => {
       console.log(
@@ -25,7 +24,8 @@ class Job extends EventEmitter {
     });
     this.on("stop-job", () => {
       clearInterval(this._intervalId);
-      clearTimeout(this._timeoutId);
+      clearTimeout(this._intervalId);
+      this._intervalId = null;
     });
   }
 
@@ -46,7 +46,7 @@ class Job extends EventEmitter {
         let timeoutId = setTimeout(() => {
           exec = this._execution();
         }, 0);
-        this.setTimeoutId(timeoutId);
+        this.setIntervalId(timeoutId);
       }
     } catch (error) {
       this.emit("job failed", error);
@@ -64,14 +64,6 @@ class Job extends EventEmitter {
   }
   getIntervalId() {
     return this._intervalId;
-  }
-
-  getTimeoudId() {
-    return this._timeoutId;
-  }
-
-  setTimeoudId(timeoutId) {
-    this._timeoutId = timeoutId;
   }
 
   setIntervalId(intervalId) {
