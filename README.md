@@ -14,4 +14,4 @@ Implement an in-process cron scheduler that accepts a job and executes it period
 1. Maximum `interval` can be added to a job is the maximum `delay` parameter accepted by `setInterval` or `setTimeout` which is
    `2147483647`ms, approximately 25 days. If you added longer `interval` than the max, it will be automatically set to the maximum interval.
 2. When the `Scheduler` sends the jobs' data to the `daemon`, the `execution` function of each job is stringfied. Thus, it loses its `this`
-   context. So, if the `execution` function of the jobs must be standalone-functions for now.
+   context. So, the `execution` function of the job must be standalone-function for now.
