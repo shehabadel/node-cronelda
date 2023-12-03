@@ -71,10 +71,6 @@ function main() {
       scheduler.addJob(job);
     });
     scheduler.start();
-
-    setTimeout(() => {
-      scheduler.stop();
-    }, 3000);
   } catch (error) {
     console.error(error);
   }
