@@ -1,5 +1,6 @@
 const EventEmitter = require("events");
 const { fork } = require("child_process");
+const DAEMON_PATH = "./daemon.js";
 class Scheduler extends EventEmitter {
   constructor() {
     super();
@@ -10,12 +11,16 @@ class Scheduler extends EventEmitter {
       console.log("---Stopping scheduler---");
       this.stopScheduler();
     });
+    this.on("scheduler-start", () => {
+      console.log("---Starting scheduler---");
+      this.startScheduler();
+    });
   }
   addJob(jobObj) {
     try {
-      // if (this._jobs[job.getName()]) {
-      //   throw new Error(`${job.getName()} already exists!`);
-      // }
+      if (this.jobExists(jobObj.name)) {
+        throw new Error(`${jobObj.name} already exists!`);
+      }
       this._jobs.push(jobObj);
       if (this.isRunning()) {
         this._daemonProcess.send({
@@ -32,8 +37,8 @@ class Scheduler extends EventEmitter {
       throw error;
     }
   }
-  start() {
-    this._daemonProcess = fork("./daemon.js");
+  startScheduler() {
+    this._daemonProcess = fork(DAEMON_PATH);
     const jobsToSend = this._jobs.map((job) => {
       job.execution = job.execution.toString();
       return job;
@@ -52,8 +57,11 @@ class Scheduler extends EventEmitter {
         this._isRunning = true;
       }
     });
+    this.setupErrorDelegators();
   }
-
+  start() {
+    this.emit("scheduler-start");
+  }
   stop() {
     this.emit("scheduler-stop");
   }
@@ -71,12 +79,25 @@ class Scheduler extends EventEmitter {
       });
       this._daemonProcess.on("message", (message) => {
         if (message === "daemon-stopped") this._daemonProcess.kill();
+        this._isRunning = false;
         console.log("---Stopped scheduler---");
       });
     }
   }
   getJobs() {
     return this._jobs;
+  }
+
+  jobExists(jobName) {
+    return this._jobs.some((job) => job.name === jobName);
+  }
+  setupErrorDelegators() {
+    this._daemonProcess.on("get-jobs-error", (message) => {
+      throw message;
+    });
+    this._daemonProcess.on("job-failed", (message) => {
+      throw message;
+    });
   }
 }
 module.exports = Scheduler;

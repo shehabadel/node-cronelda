@@ -5,13 +5,17 @@ process.on("message", (message) => {
   switch (message.type) {
     case "get-jobs-data":
       if (message.data) {
-        message.data?.forEach((job) => {
-          var execution = new Function("return " + job.execution)();
-          _jobs.set(
-            job.name,
-            new Job(job.name, job.time, execution, job?.options)
-          );
-        });
+        try {
+          message.data?.forEach((job) => {
+            var execution = new Function("return " + job.execution)();
+            _jobs.set(
+              job.name,
+              new Job(job.name, job.time, execution, job?.options)
+            );
+          });
+        } catch (error) {
+          process.send("get-jobs-error", error);
+        }
       }
       break;
     case "run-jobs":
@@ -29,23 +33,32 @@ process.on("message", (message) => {
       break;
     case "execute-new-job":
       if (message.data) {
-        const job = message.datta;
+        const job = message.data;
         job.execution = new Function("return " + job.execution)();
         _jobs.set(
           job.name,
           new Job(job.name, job.time, job.execution, job?.options)
         );
+        startJobByName(job.name);
       }
   }
 });
 
 function startDaemon() {
-  Array.from(_jobs.values()).forEach((job) => {
-    job.execute();
-  });
+  try {
+    Array.from(_jobs.values()).forEach((job) => {
+      job.execute();
+    });
+  } catch (error) {
+    process.send("job-failed", error);
+  }
 }
 function stopDaemon() {
   Array.from(_jobs.values()).forEach((job) => {
     job.stopJob();
   });
+}
+function startJobByName(name) {
+  const job = _jobs.get(name);
+  job.execute();
 }

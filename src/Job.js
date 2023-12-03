@@ -20,7 +20,7 @@ class Job extends EventEmitter {
     });
     this.on("job-failed", (error) => {
       console.log(`Job {${this._name}} has failed with the following error`);
-      console.error(error);
+      throw error;
     });
     this.on("stop-job", () => {
       clearInterval(this._intervalId);
