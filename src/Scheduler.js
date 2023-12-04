@@ -86,11 +86,13 @@ class Scheduler extends EventEmitter {
         type: "stop-jobs",
       });
       this._daemonProcess.on("message", (message) => {
-        if (message === "daemon-stopped") this._daemonProcess.kill();
-        this._isRunning = false;
-        console.log(
-          `SCHEDULER: ---Stopped scheduler---  {${new Date().toLocaleString()}}`
-        );
+        if (message === "daemon-stopped") {
+          this._daemonProcess.kill();
+          this._isRunning = false;
+          console.log(
+            `SCHEDULER: ---Stopped scheduler---  {${new Date().toLocaleString()}}`
+          );
+        }
       });
     }
   }

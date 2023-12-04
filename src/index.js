@@ -76,10 +76,19 @@ function main() {
     // setTimeout(() => {
     //   scheduler.stop();
     // }, 6000);
-    // setTimeout(() => {
-    //   console.log("will start again");
-    //   scheduler.start();
-    // }, 9000);
+    setTimeout(() => {
+      scheduler.addJob({
+        name: "job 2",
+        time: "2s",
+        execution: () => {
+          return new Promise(() => {
+            setTimeout(() => {
+              console.log("hello world async after 2 seconds");
+            }, 2000);
+          });
+        },
+      });
+    }, 9000);
     // setTimeout(() => {
     //   scheduler.stop();
     // }, 12000);
