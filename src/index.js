@@ -67,9 +67,7 @@ const jobsBulk = [
 function main() {
   try {
     const scheduler = new Scheduler();
-    jobsBulk.forEach((job) => {
-      scheduler.addJob(job);
-    });
+    scheduler.addBulkJobs(jobsBulk);
     scheduler.start();
 
     setTimeout(() => {
