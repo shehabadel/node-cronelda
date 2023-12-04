@@ -13,7 +13,9 @@ class Scheduler extends EventEmitter {
       this.stopScheduler();
     });
     this.on("scheduler-start", () => {
-      console.log("SCHEDULER: ---Starting scheduler---");
+      console.log(
+        `SCHEDULER: ---Starting scheduler--- {${new Date().toLocaleString()}}`
+      );
       this.startScheduler();
     });
     this.on("task-add-failed", (error) => {
@@ -86,7 +88,9 @@ class Scheduler extends EventEmitter {
       this._daemonProcess.on("message", (message) => {
         if (message === "daemon-stopped") this._daemonProcess.kill();
         this._isRunning = false;
-        console.log("SCHEDULER: ---Stopped scheduler---");
+        console.log(
+          `SCHEDULER: ---Stopped scheduler---  {${new Date().toLocaleString()}}`
+        );
       });
     }
   }
@@ -110,6 +114,15 @@ class Scheduler extends EventEmitter {
   }
   setDaemonPath(path) {
     this._daemonPath = path;
+  }
+  addBulkJobs(jobs) {
+    try {
+      jobs.forEach((job) => {
+        this.addJob(job);
+      });
+    } catch (error) {
+      this.emit("task-add-failed", error);
+    }
   }
 }
 module.exports = Scheduler;
