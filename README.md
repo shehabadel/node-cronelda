@@ -3,7 +3,7 @@
 Implement an in-process cron scheduler that accepts a job and executes it periodically.
 
 ## Description
-`node-cronelda` is a simple lightweighted (zero-dependencies) scheduler that runs scheduled jobs based on provided intervals similar to cron-jobs. The scheduler is able to handle multiple synchronous and asynchronous jobs' executions concurrently. `node-cronelda` works by spawning a child process which executes the jobs provided, without blocking the main thread. 
+`node-cronelda` is a simple lightweighted (zero-dependencies) scheduler that runs scheduled jobs based on provided intervals similar to cron-jobs. The scheduler is able to handle multiple synchronous and asynchronous jobs' executions concurrently. `node-cronelda` works by spawning a child process which executes the jobs provided without blocking the main thread by communicating with the parent process following IPC. 
 
 It simply works by importing `Scheduler` class in your main code.
 ```javascript
