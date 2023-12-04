@@ -233,6 +233,45 @@ You can write `1hr 10m 25s` which will be converted to an interval of `4225000`
 **Note: due to nature of setInterval() and setTimeout, the maximum expression allowed is 25 days (See limitations section below)** 
 <hr>
 
+## Technical Reasonings
+
+1. I decided to delegate running jobs to another module called `daemon` which runs in a child process whenever the Scheduler's `start()` method is called.
+
+   Why did I go with this approach?
+
+   - I faced a problem with clearing the timeouts of the tasks whenever I call `scheduler.stop()`, since it keeps waiting for the last task to finish its callback, then terminates.
+   Unlike using a separate child process which will terminate the process directly.
+   - In addition, this approach will guarantee us that the main thread will not be blocked by any CPU Intensive jobs running.   
+
+## Trade-offs
+
+1. Adding `process.stdout.write()` when trying to log the current time and job's name before execution resulted in overflow of the logs between the asynchronous jobs and each other. Sometimes it is not stable, since we cannot expect the behavior of the Event loop.
+
+    Instead I emitted events before execution and after execution of the job's task.
+
+```javascript
+ this.emit("start-executing");
+      exec = this._execution();
+//....
+this.emit("finished-executing");
+```
+
+And inside each event listener for the above events, I logged the time and job's name which signaled these events.
+```javascript
+    this.on("start-executing", () => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: started executing `
+      );
+      this._isExecuting = true;
+    });
+    this.on("finished-executing", () => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: finished executing `
+      );
+      this._isExecuting = false;
+    });
+```
+
 ## Example usage
 ### Code snippet - One job runs once
 ```javascript
@@ -389,38 +428,3 @@ main();
    `2147483647`ms, approximately 25 days. If you added longer `interval` than the max, it will be automatically set to the maximum interval.
 2. When the `Scheduler` sends the jobs' data to the `daemon`, the `execution` function of each job is stringfied. Thus, it loses its `this`
    context. So, the `execution` function of the job must be standalone-function for now.
-
-## Trade-offs
-1. I decided to delegate running jobs to another module called “daemon” which runs in a child process whenever the Scheduler's `start()` method is called.
-
-   Why did I go with this approach?
-
-   - I faced a problem with clearing the timeouts of the tasks whenever I call `scheduler.stop()`, since it keeps waiting for the last task to finish its callback, then terminates.
-   Unlike using a separate child process which will terminate the process directly. In addition, it will not block the main process execution.
-
-2. Adding `process.stdout.write()` when trying to log the current time and job's name before execution resulted in overflow of the logs between the asynchronous jobs and each other. Sometimes it is not stable, since we cannot expect the behavior of the Event loop.
-
-    Instead I emitted events before execution and after execution of the job's task.
-
-```javascript
- this.emit("start-executing");
-      exec = this._execution();
-//....
-this.emit("finished-executing");
-```
-
-And inside each event listener for the above events, I logged the time and job's name which signaled these events.
-```javascript
-    this.on("start-executing", () => {
-      console.log(
-        `[${new Date().toLocaleString()}] Job {${this.getName()}}: started executing `
-      );
-      this._isExecuting = true;
-    });
-    this.on("finished-executing", () => {
-      console.log(
-        `[${new Date().toLocaleString()}] Job {${this.getName()}}: finished executing `
-      );
-      this._isExecuting = false;
-    });
-```
