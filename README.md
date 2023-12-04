@@ -1,4 +1,4 @@
-# telda-coding-challenge
+# `node-cronelda` (telda-coding-challenge)
 
 Implement an in-process cron scheduler that accepts a job and executes it periodically.
 
@@ -119,18 +119,31 @@ scheduler.stop()
       }
       break;
    ```
-10. When the client wants to stops the `daemon` from running, they must call the following method in their source code
+10. `startDaemon()` method calls `job.execute()` method of each job received from the `Scheduler`
+    ```javascript
+    //daemon.js
+    function startDaemon() {
+        try {
+        Array.from(_jobs.values()).forEach((job) => {
+          job.execute();
+        });
+      } catch (error) {
+        process.send("job-failed", error);
+      }
+    }
+    ```
+11. When the client wants to stops the `daemon` from running, they must call the following method in their source code
     ```javascript
       scheduler.stop()
     ```
-11. `stop()` method emits an event called `scheduler-stop` which calls `stopScheduler` auxiliary method.
+12. `stop()` method emits an event called `scheduler-stop` which calls `stopScheduler` auxiliary method.
     ```javascript
     this.on("scheduler-stop", () => {
       console.log("SCHEDULER: ---Stopping scheduler---");
       this.stopScheduler();
     });
     ```
-12. `stopScheduler` method will send a message to the `daemon` to stop running the jobs, and wait for a reply with `daemon-stopped` in order to terminate the daemon process and set the scheduler to `running = false`
+13. `stopScheduler` method will send a message to the `daemon` to stop running the jobs, and wait for a reply with `daemon-stopped` in order to terminate the daemon process and set the scheduler to `running = false`
    ```javascript
    //Scheduler.js
    //...
@@ -232,7 +245,7 @@ function main() {
       name: "job 1",
       time: "5s",
       execution: () => {
-        console.log("x");
+        console.log("job single run");
       },
       options: {
         once: true,
@@ -249,7 +262,118 @@ function main() {
 main();
 
 ```
-![image](https://github.com/shehabadel/telda-coding-challenge/assets/53188087/28f5b87c-e48b-4756-b611-c7544fbceb24)
+![image](https://github.com/shehabadel/telda-coding-challenge/assets/53188087/ac3e970c-fb83-40d7-8b58-e0b3395c0fc6)
+
+
+### Code snippet - Add a job while scheduler already running
+```javascript
+//index.js
+const Scheduler = require("./Scheduler");
+const jobsBulk = [
+  {
+    name: "job 1",
+    time: "5s",
+    execution: () => {
+      console.log("x");
+    },
+    options: {
+      once: true,
+    },
+  },
+];
+function main() {
+  try {
+    const scheduler = new Scheduler();
+    scheduler.addBulkJobs(jobsBulk);
+    scheduler.start();
+    //Add `job 2` 9 seconds after starting the scheduler
+    setTimeout(() => {
+      scheduler.addJob({
+        name: "job 2",
+        time: "2s",
+        execution: () => {
+          return new Promise((resolve,reject) => {
+            setTimeout(() => {
+              console.log("hello world async after 2 seconds");
+                resolve()
+            }, 2000);
+          });
+        },
+      });
+    }, 9000);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+main();
+
+```
+![image](https://github.com/shehabadel/telda-coding-challenge/assets/53188087/bc7bada0-09a9-4f34-86a9-703ebed0570b)
+
+
+### Code snippet - multiple jobs running together then shutdown after 15 seconds
+```javascript
+//index.js
+const Scheduler = require("./Scheduler");
+const jobsBulk = [
+  {
+    name: "job 1",
+    time: "5s",
+    execution: () => {
+      console.log("hello world synchronous");
+    },
+    options: {
+      once: false,
+    },
+  },
+  {
+    name: "job 3",
+    time: "6s",
+    execution: () => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          console.log("hello world async after 2 second ");
+          resolve();
+        }, 2000);
+      });
+    },
+  },
+];
+function main() {
+  try {
+    const scheduler = new Scheduler();
+    scheduler.addBulkJobs(jobsBulk);
+    scheduler.start();
+    //Add `job 2` 9 seconds after starting the scheduler
+    setTimeout(() => {
+      scheduler.addJob({
+        name: "job 2",
+        time: "2s",
+        execution: () => {
+          return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              console.log("hello world async after 1 seconds");
+              resolve();
+            }, 1000);
+          });
+        },
+      });
+    }, 9000);
+//Shutdown after 15 seconds
+    setTimeout(() => {
+      scheduler.stop();
+    }, 15000);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+main();
+
+```
+![image](https://github.com/shehabadel/telda-coding-challenge/assets/53188087/b2863d5b-2181-4dad-828b-131d22bfd57c)
+
 
 ## To be improved
 
@@ -266,7 +390,6 @@ main();
 2. When the `Scheduler` sends the jobs' data to the `daemon`, the `execution` function of each job is stringfied. Thus, it loses its `this`
    context. So, the `execution` function of the job must be standalone-function for now.
 
-
 ## Trade-offs
 1. I decided to delegate running jobs to another module called “daemon” which runs in a child process whenever the Scheduler's `start()` method is called.
 
@@ -275,3 +398,29 @@ main();
    - I faced a problem with clearing the timeouts of the tasks whenever I call `scheduler.stop()`, since it keeps waiting for the last task to finish its callback, then terminates.
    Unlike using a separate child process which will terminate the process directly. In addition, it will not block the main process execution.
 
+2. Adding `process.stdout.write()` when trying to log the current time and job's name before execution resulted in overflow of the logs between the asynchronous jobs and each other. Sometimes it is not stable, since we cannot expect the behavior of the Event loop.
+
+    Instead I emitted events before execution and after execution of the job's task.
+
+```javascript
+ this.emit("start-executing");
+      exec = this._execution();
+//....
+this.emit("finished-executing");
+```
+
+And inside each event listener for the above events, I logged the time and job's name which signaled these events.
+```javascript
+    this.on("start-executing", () => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: started executing `
+      );
+      this._isExecuting = true;
+    });
+    this.on("finished-executing", () => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: finished executing `
+      );
+      this._isExecuting = false;
+    });
+```
