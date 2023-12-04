@@ -13,22 +13,38 @@ class Job extends EventEmitter {
     this._once = options.once !== undefined ? options.once : false;
     this._interval = Math.min(parseTimeToInt(time), MAX_TIME_INTERVAL);
     this._intervalId = null;
-
-    this.on("start-execution", () => {
+    this._isExecuting = false;
+    this.on("start-running", () => {
       console.log(
-        `Job {${this._name}} has started executing with interval: ${
-          this._interval
-        } @ {${new Date().toLocaleString()}} `
+        `[${new Date().toLocaleString()}]: Job {${
+          this._name
+        }} started running with interval: ${this._interval}`
       );
     });
     this.on("job-failed", (error) => {
-      console.log(`Job {${this._name}} has failed with the following error`);
+      console.log(
+        `[${new Date().toLocaleString()}]: Job {${
+          this._name
+        }} has failed with the following error`
+      );
       throw error;
     });
     this.on("stop-job", () => {
       clearInterval(this._intervalId);
       clearTimeout(this._intervalId);
       this._intervalId = null;
+    });
+    this.on("start-executing", (intervalId) => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: started executing `
+      );
+      this._isExecuting = true;
+    });
+    this.on("finished-executing", () => {
+      console.log(
+        `[${new Date().toLocaleString()}] Job {${this.getName()}}: finished executing `
+      );
+      this._isExecuting = false;
     });
   }
 
@@ -37,31 +53,54 @@ class Job extends EventEmitter {
    * and emits an event when job finishes or fails.
    */
   execute() {
-    this.emit("start-execution");
+    this.emit("start-running");
     let exec;
     try {
       if (!this.getOnce()) {
         let intervalId = setInterval(() => {
-          process.stdout.write(
-            `{${this._name}} @ {${new Date().toLocaleString()}}: `
-          );
+          this.emit("start-executing", intervalId);
           exec = this._execution();
+          if (exec instanceof Promise) {
+            exec
+              .then(() => {
+                this.emit("finished-executing");
+              })
+              .catch((error) => {
+                throw error;
+              });
+          } else {
+            this.emit("finished-executing");
+          }
         }, this._interval);
         this.setIntervalId(intervalId);
       } else {
-        let timeoutId = setTimeout(() => {
-          process.stdout.write(
-            `{${this._name}} @ {${new Date().toLocaleString()}}: `
-          );
-          exec = this._execution();
-        }, this._interval);
-        this.setIntervalId(timeoutId);
+        this._executeOnce(exec);
       }
     } catch (error) {
       this.emit("job failed", error);
     }
   }
-
+  /**
+   * @description Auxiliary method for running a single-run job
+   */
+  _executeOnce(exec) {
+    let timeoutId = setTimeout(() => {
+      this.emit("start-executing");
+      exec = this._execution();
+      if (exec instanceof Promise) {
+        exec
+          .then(() => {
+            this.emit("finished-executing");
+          })
+          .catch((error) => {
+            throw error;
+          });
+      } else {
+        this.emit("finished-executing");
+      }
+    }, this._interval);
+    this.setIntervalId(timeoutId);
+  }
   getName() {
     return this._name;
   }
