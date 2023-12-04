@@ -241,11 +241,23 @@ You can write `1hr 10m 25s` which will be converted to an interval of `4225000`
 
    - I faced a problem with clearing the timeouts of the tasks whenever I call `scheduler.stop()`, since it keeps waiting for the last task to finish its callback, then terminates.
    Unlike using a separate child process which will terminate the process directly.
-   - In addition, this approach will guarantee us that the main thread will not be blocked by any CPU Intensive jobs running.   
+   - In addition, this approach will guarantee us that the main thread will not be blocked by any CPU Intensive jobs running.
+
+2. I decided to use the `EventEmitter` API by Node.js to adapt a publisher-subscriber pattern where I can perform specific actions upon listening to specific events.
+   For example, start running the `Scheduler`, stopping the `Scheduler`, executing the jobs in the `daemon`,...etc.
 
 ## Trade-offs
 
-1. Adding `process.stdout.write()` when trying to log the current time and job's name before execution resulted in overflow of the logs between the asynchronous jobs and each other. Sometimes it is not stable, since we cannot expect the behavior of the Event loop.
+1. Upon sending a `Job` object from the `Scheduler` to the `daemon` child process, it serializes the object being sent internally while JSON doesn't support serializing Functions.
+   ```
+   JSON doesn't support serializing functions (at least out of the box). You could convert the function to its string
+   representation first (via function.toString()) and then re-create the function again in the child process.
+   The problem though is you lose scope and context with this process, so your function really has to be standalone. 
+   ```
+   This left me with an option to convert the execution method of the `Job` to a string form, and convert it back to its actual form in the `daemon`
+   process upon receiving the `Job` object. 
+
+2. Adding `process.stdout.write()` when trying to log the current time and job's name before execution resulted in overflow of the logs between the asynchronous jobs and each other. Sometimes it is not stable, since we cannot expect the behavior of the Event loop.
 
     Instead I emitted events before execution and after execution of the job's task.
 
