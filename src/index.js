@@ -73,9 +73,6 @@ function main() {
     scheduler.addBulkJobs(jobsBulk);
     scheduler.start();
 
-    // setTimeout(() => {
-    //   scheduler.stop();
-    // }, 6000);
     setTimeout(() => {
       scheduler.addJob({
         name: "job 2",

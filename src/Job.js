@@ -41,7 +41,7 @@ class Job extends EventEmitter {
       if (!this.getOnce()) {
         let intervalId = setInterval(() => {
           process.stdout.write(
-            `${this._name}@{${new Date().toLocaleString()}}`
+            `{${this._name}} @ {${new Date().toLocaleString()}}: `
           );
           exec = this._execution();
         }, this._interval);
