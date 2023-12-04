@@ -46,7 +46,7 @@ class Job extends EventEmitter {
       } else {
         let timeoutId = setTimeout(() => {
           exec = this._execution();
-        }, 0);
+        }, this._interval);
         this.setIntervalId(timeoutId);
       }
     } catch (error) {
