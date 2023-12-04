@@ -34,7 +34,7 @@ class Job extends EventEmitter {
       clearTimeout(this._intervalId);
       this._intervalId = null;
     });
-    this.on("start-executing", (intervalId) => {
+    this.on("start-executing", () => {
       console.log(
         `[${new Date().toLocaleString()}] Job {${this.getName()}}: started executing `
       );
@@ -58,7 +58,7 @@ class Job extends EventEmitter {
     try {
       if (!this.getOnce()) {
         let intervalId = setInterval(() => {
-          this.emit("start-executing", intervalId);
+          this.emit("start-executing");
           exec = this._execution();
           if (exec instanceof Promise) {
             exec
