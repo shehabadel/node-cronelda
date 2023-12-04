@@ -16,7 +16,9 @@ class Job extends EventEmitter {
 
     this.on("start-execution", () => {
       console.log(
-        `Job {${this._name}} has started executing with interval: ${this._interval}`
+        `Job {${this._name}} has started executing with interval: ${
+          this._interval
+        } @ {${new Date().toLocaleString()}} `
       );
     });
     this.on("job-failed", (error) => {
