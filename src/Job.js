@@ -51,6 +51,9 @@ class Job extends EventEmitter {
   /**
    * @description executes the Job and returns the result
    * and emits an event when job finishes or fails.
+   * If the job is a single run job (once=true), then add its execution
+   * as a callback to a setTimeout. Else, add it as a callback in a
+   * setInterval, and pass the job's interval as an argument to the setInterval.
    */
   execute() {
     this.emit("start-running");
@@ -101,6 +104,9 @@ class Job extends EventEmitter {
     }, this._interval);
     this.setIntervalId(timeoutId);
   }
+  /**
+   * Setters and Getters
+   */
   getName() {
     return this._name;
   }
@@ -117,7 +123,9 @@ class Job extends EventEmitter {
   setIntervalId(intervalId) {
     this._intervalId = intervalId;
   }
-
+  /**
+   * @description Sends an event to stop the job.
+   */
   stopJob() {
     this.emit("stop-job");
   }

@@ -43,7 +43,9 @@ process.on("message", (message) => {
       }
   }
 });
-
+/**
+ * @description Runs the jobs received from the Scheduler.
+ */
 function startDaemon() {
   try {
     Array.from(_jobs.values()).forEach((job) => {
@@ -53,11 +55,18 @@ function startDaemon() {
     process.send("job-failed", error);
   }
 }
+/**
+ * @description Calls `stopJob` method on each running job.
+ */
 function stopDaemon() {
   Array.from(_jobs.values()).forEach((job) => {
     job.stopJob();
   });
 }
+/**
+ * @description Starts a job with a unique name.
+ * @param {string} name
+ */
 function startJobByName(name) {
   const job = _jobs.get(name);
   job.execute();
